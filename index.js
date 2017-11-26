@@ -63,7 +63,7 @@ application.hears(buttonStrings[0], (ctx) => {
 });
 
 application.hears(buttonStrings[1], (ctx) => {
-  var currentUser = ctx.message.from.username;n
+  var currentUser = ctx.message.from.username;
   if(currentUser === undefined){
     currentUser = ctx.message.from.id;
   }
@@ -109,19 +109,23 @@ function displayHTMLResponseForToday(html, ctx){
     html: $('.meals').eq(0).html(),
     angebot1: {
       title: null,
-      name: null
+      name: null,
+      type: null
     },
     angebot2: {
       title: null,
-      name: null
+      name: null,
+      type: null
     },
     angebot3: {
       title: null,
-      name: null
+      name: null,
+      type: null
     },
     angebot4: {
       title: null,
-      name: null
+      name: null,
+      type: null
     }
   }
 
@@ -129,15 +133,20 @@ function displayHTMLResponseForToday(html, ctx){
   $ = cheerio.load(meal.html);
   meal.angebot1.title = $('li:nth-child(1) > h3').text();
   meal.angebot1.name = $('li:nth-child(1) > ul > li > p').text().replace(/(\r\n|\n|\r)/gm,"");
+  meal.angebot1.type = foodTypeChecker($('li:nth-child(1) > ul > li > .notes').text(), meal.angebot1.name);
+
 
   meal.angebot2.title = $('li:nth-child(2) > h3').text();
   meal.angebot2.name = $('li:nth-child(2) > ul > li > p').text().replace(/(\r\n|\n|\r)/gm,"");
+  meal.angebot2.type = foodTypeChecker($('li:nth-child(2) > ul > li > .notes').text(), meal.angebot2.name);
 
   meal.angebot3.title = $('li:nth-child(3) > h3').text();
   meal.angebot3.name = $('li:nth-child(3) > ul > li > p').text().replace(/(\r\n|\n|\r)/gm,"");
+  meal.angebot3.type = foodTypeChecker($('li:nth-child(3) > ul > li > .notes').text(), meal.angebot3.name);
 
   meal.angebot4.title = $('li:nth-child(4) > h3').text();
   meal.angebot4.name = $('li:nth-child(4) > ul > li > p').text().replace(/(\r\n|\n|\r)/gm,"");
+  meal.angebot4.type = foodTypeChecker($('li:nth-child(4) > ul > li > .notes').text(), meal.angebot4.name);
 
   ctx.telegram.sendMessage(ctx.message.chat.id,
       '*' + meal.angebot1.title + '* : ' + '\n' + meal.angebot1.name + '\n' +
@@ -167,19 +176,23 @@ function displayHTMLResponseForTomorrow(html, ctx){
     html: $('.meals').eq(1).html(),
     angebot1: {
       title: null,
-      name: null
+      name: null,
+      type: null,
     },
     angebot2: {
       title: null,
-      name: null
+      name: null,
+      type: null
     },
     angebot3: {
       title: null,
-      name: null
+      name: null,
+      type: null
     },
     angebot4: {
       title: null,
-      name: null
+      name: null,
+      type: null
     }
   }
 
@@ -188,21 +201,31 @@ function displayHTMLResponseForTomorrow(html, ctx){
   $ = cheerio.load(meal.html);
   meal.angebot1.title = $('li:nth-child(1) > h3').text();
   meal.angebot1.name = $('li:nth-child(1) > ul > li > p').text().replace(/(\r\n|\n|\r)/gm,"");
+  meal.angebot1.type = foodTypeChecker($('li:nth-child(1) > ul > li > .notes').text(), meal.angebot1.name);
 
   meal.angebot2.title = $('li:nth-child(2) > h3').text();
   meal.angebot2.name = $('li:nth-child(2) > ul > li > p').text().replace(/(\r\n|\n|\r)/gm,"");
+  meal.angebot2.type = foodTypeChecker($('li:nth-child(2) > ul > li > .notes').text(), meal.angebot2.name);
 
   meal.angebot3.title = $('li:nth-child(3) > h3').text();
   meal.angebot3.name = $('li:nth-child(3) > ul > li > p').text().replace(/(\r\n|\n|\r)/gm,"");
+  meal.angebot3.type = foodTypeChecker($('li:nth-child(3) > ul > li > .notes').text(), meal.angebot3.name);
 
   meal.angebot4.title = $('li:nth-child(4) > h3').text();
   meal.angebot4.name = $('li:nth-child(4) > ul > li > p').text().replace(/(\r\n|\n|\r)/gm,"");
+  meal.angebot4.type = foodTypeChecker($('li:nth-child(4) > ul > li > .notes').text(), meal.angebot4.name);
+
+  console.log(meal.angebot1.type);
+  console.log(meal.angebot2.type);
+  console.log(meal.angebot3.type);
+  console.log(meal.angebot4.type);
 
   ctx.telegram.sendMessage(ctx.message.chat.id,
-      '*' + meal.angebot1.title + '* : ' + '\n' + meal.angebot1.name + '\n' +
-      '*' + meal.angebot2.title + '* : ' + '\n' + meal.angebot2.name + '\n' +
-      '*' + meal.angebot3.title + '* : ' + '\n' + meal.angebot3.name + '\n' +
-      '*' + meal.angebot4.title + '* : ' + '\n' + meal.angebot4.name + '\n', option);
+      '*' + meal.angebot1.title + '*: ' + '\n' + meal.angebot1.name + '\n'  + meal.angebot1.type + '\n' +
+      '*' + meal.angebot2.title + '*: ' + '\n' + meal.angebot2.name + '\n'  + meal.angebot2.type + '\n' +
+      '*' + meal.angebot3.title + '*: ' + '\n' + meal.angebot3.name + '\n'  + meal.angebot3.type + '\n' +
+      '*' + meal.angebot4.title + '*: ' + '\n' + meal.angebot4.name + '\n'  + meal.angebot4.type + '\n'
+      , option);
 }
 
 
@@ -218,10 +241,44 @@ function setCurrentDate(){
   isSaturday = (day == 6);
 }
 
+function foodTypeChecker(htmlString, name){
+  var vegetarisch = '🌽 - vegetarisch'
+  var vegan = '🍆 - vegan';
+  var gefluegel = '🐔 - mit Geflügel';
+  var schweinefleisch = '🐖 - mit Schweinefleisch';
+  var rindfleisch = '🐄 - mit Rindfleisch';
+  var fisch = '🐟 - mit Fisch';
+
+  var returnValue = '';
+
+  if(name.includes('(vegan)')){
+    returnValue = returnValue + ' ' + vegan;
+  }
+  if(htmlString.includes('vegetabil')){
+    returnValue = returnValue + ' ' + vegetarisch;
+  }
+  if(htmlString.includes('mensaVital')){
+    returnValue = returnValue + ' ' + vegan;
+  }
+  if(htmlString.includes('Geflügelfleisch')){
+    returnValue = returnValue + ' ' + gefluegel;
+  }
+  if(htmlString.includes('Schweinefleisch')){
+    returnValue = returnValue + ' ' + schweinefleisch;
+  }
+  if(htmlString.includes('Rindfleisch')){
+    returnValue = returnValue + ' ' + rindfleisch;
+  }
+  if(htmlString.includes('Fisch')){
+    returnValue = returnValue + ' ' + fisch;
+  }
+  return returnValue;
+}
+
 function sendUserDataToGoogleSpreadsheets(currentDate, usedUsername, usedCommand){
   doc.useServiceAccountAuth(creds, function (err, command) {
-    doc.addRosw(1, { msg_date: currentDate, user_name: usedUsername, command: usedCommand}, function(){
-      console.log('geil!');
+    doc.addRow(1, { msg_date: currentDate, user_name: usedUsername, command: usedCommand}, function(){
+      console.log('Sent Userdata to Google Spreadsheet');
     })
   });
 }
