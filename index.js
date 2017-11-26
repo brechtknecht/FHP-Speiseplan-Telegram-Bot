@@ -39,12 +39,17 @@ app.get('/', function(request, response) {
 });
 //-------------------------------
 
+// Sets global regex, so that there will always be the custom keyboard triggered
+// if the user gives any input to the bot
 const regex = new RegExp(/./g)
 
+// The actual custom buttons
 const buttonStrings = ["Speiseplan für Heute", "Speiseplan für Morgen"];
 
 application.hears(buttonStrings[0], (ctx) => {
+  var trigger = 'today';
   var currentUser = ctx.message.from.username;
+  // determines if the user has an username or not
   if(currentUser === undefined){
     currentUser = ctx.message.from.id;
   }
@@ -52,7 +57,7 @@ application.hears(buttonStrings[0], (ctx) => {
 
   var request = require('request');
     request('http://openmensa.org/c/57#11/52.4041/13.0264', function (error, response, body) {
-      getHTMLResponseForToday(body.toString(), ctx);
+      getHTMLResponseForToday(body.toString(), ctx, trigger);
   });
 
   var option = {
@@ -63,6 +68,7 @@ application.hears(buttonStrings[0], (ctx) => {
 });
 
 application.hears(buttonStrings[1], (ctx) => {
+  var trigger = 'tomorrow';
   var currentUser = ctx.message.from.username;
   if(currentUser === undefined){
     currentUser = ctx.message.from.id;
@@ -71,7 +77,7 @@ application.hears(buttonStrings[1], (ctx) => {
 
   var request = require('request');
     request('http://openmensa.org/c/57#11/52.4041/13.0264', function (error, response, body) {
-      getHTMLResponseForTomorrow(body.toString(), ctx);
+      getHTMLResponseForTomorrow(body.toString(), ctx, trigger);
   });
   var option = {
       "parse_mode": "Markdown"
@@ -80,16 +86,27 @@ application.hears(buttonStrings[1], (ctx) => {
   ctx.telegram.sendMessage(ctx.message.chat.id, `Speiseplan für *morgen* anzeigen`, option);
 });
 
+
+
+
 application.hears(regex, (ctx) => {
+  var currentUser = ctx.message.from.username;
+  if(currentUser === undefined){
+    currentUser = ctx.message.from.id;
+  }
   var option = {
               "parse_mode": "Markdown",
               "reply_markup": {  "keyboard": [[buttonStrings[0]], [buttonStrings[1]]]  }
   };
+
+  const currentDate = convertUnixTimestampToDate(ctx.message.date);
+
+  sendUserDataToGoogleSpreadsheets(currentDate, currentUser, [ctx.message.text]);
   ctx.telegram.sendMessage(ctx.message.chat.id, "*Welchen* Speiseplan möchtest du sehen?", option);
 });
 
 
-function getHTMLResponseForToday(html, ctx){
+function getHTMLResponseForToday(html, ctx, trigger){
   $ = cheerio.load(html);
 
   setCurrentDate();
@@ -104,35 +121,10 @@ function getHTMLResponseForToday(html, ctx){
     return;
   }
 
-  var meal = {
-    date: $('#remote-canteens-show > header > h2').text(),
-    html: $('.meals').eq(0).html(),
-    angebot1: {
-      title: null,
-      name: null,
-      type: null
-    },
-    angebot2: {
-      title: null,
-      name: null,
-      type: null
-    },
-    angebot3: {
-      title: null,
-      name: null,
-      type: null
-    },
-    angebot4: {
-      title: null,
-      name: null,
-      type: null
-    }
-  }
-
-  generateRespondFromData($, option, ctx);
+  generateRespondFromData($, option, ctx, trigger);
 }
 
-function getHTMLResponseForTomorrow(html, ctx){
+function getHTMLResponseForTomorrow(html, ctx, trigger){
   $ = cheerio.load(html);
 
   setCurrentDate();
@@ -148,15 +140,17 @@ function getHTMLResponseForTomorrow(html, ctx){
     return;
   }
 
-
-  generateRespondFromData($, option, ctx);
-
+  generateRespondFromData($, option, ctx, trigger);
 }
 
 
 /* function that determines the current day triggered by the user request */
 function setCurrentDate(){
   var day = new Date().getDay();
+  if(new Date().getHours() > 22){
+    day++;
+  }
+
   isSunday = (day == 0);
   isMonday = (day == 1);
   isTuesday = (day == 2);
@@ -166,10 +160,16 @@ function setCurrentDate(){
   isSaturday = (day == 6);
 }
 
-function generateRespondFromData($, option, ctx){
+function generateRespondFromData($, option, ctx, trigger){
+  if(trigger == 'today'){
+    trigger = 0;
+  } else if(trigger == 'tomorrow'){
+    trigger = 1;
+  }
+
   var meal = {
     date: $('#remote-canteens-show > header > h2').text(),
-    html: $('.meals').eq(1).html(),
+    html: $('.meals').eq(trigger).html(),
     angebot1: {
       title: null,
       name: null,
@@ -228,16 +228,14 @@ function foodTypeChecker(htmlString, name){
   var schweinefleisch = '🐖 - mit Schweinefleisch';
   var rindfleisch = '🐄 - mit Rindfleisch';
   var fisch = '🐟 - mit Fisch';
+  var lamm  = '🐑 - mit Lamm';
 
   var returnValue = '';
 
-  if(name.includes('(vegan)')){
-    returnValue = returnValue + ' ' + vegan;
-  }
   if(htmlString.includes('vegetabil')){
     returnValue = returnValue + ' ' + vegetarisch;
   }
-  if(htmlString.includes('mensaVital')){
+  if(htmlString.includes('mensaVital') || name.includes('(vegan)')){
     returnValue = returnValue + ' ' + vegan;
   }
   if(htmlString.includes('Geflügelfleisch')){
@@ -248,6 +246,9 @@ function foodTypeChecker(htmlString, name){
   }
   if(htmlString.includes('Rindfleisch')){
     returnValue = returnValue + ' ' + rindfleisch;
+  }
+  if(htmlString.includes('Lamm')){
+    returnValue = returnValue + ' ' + lamm;
   }
   if(htmlString.includes('Fisch')){
     returnValue = returnValue + ' ' + fisch;
@@ -265,6 +266,8 @@ function sendUserDataToGoogleSpreadsheets(currentDate, usedUsername, usedCommand
 
 function convertUnixTimestampToDate(unix_timestamp){
   var date = new Date(unix_timestamp*1000);
+
+  console.log(unix_timestamp*1000);
   /*var day = date.getDay();
   var hours = date.getHours();
   var minutes = "0" + date.getMinutes();
