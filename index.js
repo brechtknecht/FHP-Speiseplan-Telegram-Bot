@@ -52,7 +52,7 @@ application.hears(buttonStrings[0], (ctx) => {
 
   var request = require('request');
     request('http://openmensa.org/c/57#11/52.4041/13.0264', function (error, response, body) {
-      displayHTMLResponseForToday(body.toString(), ctx);
+      getHTMLResponseForToday(body.toString(), ctx);
   });
 
   var option = {
@@ -71,7 +71,7 @@ application.hears(buttonStrings[1], (ctx) => {
 
   var request = require('request');
     request('http://openmensa.org/c/57#11/52.4041/13.0264', function (error, response, body) {
-      displayHTMLResponseForTomorrow(body.toString(), ctx);
+      getHTMLResponseForTomorrow(body.toString(), ctx);
   });
   var option = {
       "parse_mode": "Markdown"
@@ -89,7 +89,7 @@ application.hears(regex, (ctx) => {
 });
 
 
-function displayHTMLResponseForToday(html, ctx){
+function getHTMLResponseForToday(html, ctx){
   $ = cheerio.load(html);
 
   setCurrentDate();
@@ -129,33 +129,10 @@ function displayHTMLResponseForToday(html, ctx){
     }
   }
 
-  //reinitialize html table
-  $ = cheerio.load(meal.html);
-  meal.angebot1.title = $('li:nth-child(1) > h3').text();
-  meal.angebot1.name = $('li:nth-child(1) > ul > li > p').text().replace(/(\r\n|\n|\r)/gm,"");
-  meal.angebot1.type = foodTypeChecker($('li:nth-child(1) > ul > li > .notes').text(), meal.angebot1.name);
-
-
-  meal.angebot2.title = $('li:nth-child(2) > h3').text();
-  meal.angebot2.name = $('li:nth-child(2) > ul > li > p').text().replace(/(\r\n|\n|\r)/gm,"");
-  meal.angebot2.type = foodTypeChecker($('li:nth-child(2) > ul > li > .notes').text(), meal.angebot2.name);
-
-  meal.angebot3.title = $('li:nth-child(3) > h3').text();
-  meal.angebot3.name = $('li:nth-child(3) > ul > li > p').text().replace(/(\r\n|\n|\r)/gm,"");
-  meal.angebot3.type = foodTypeChecker($('li:nth-child(3) > ul > li > .notes').text(), meal.angebot3.name);
-
-  meal.angebot4.title = $('li:nth-child(4) > h3').text();
-  meal.angebot4.name = $('li:nth-child(4) > ul > li > p').text().replace(/(\r\n|\n|\r)/gm,"");
-  meal.angebot4.type = foodTypeChecker($('li:nth-child(4) > ul > li > .notes').text(), meal.angebot4.name);
-
-  ctx.telegram.sendMessage(ctx.message.chat.id,
-      '*' + meal.angebot1.title + '* : ' + '\n' + meal.angebot1.name + '\n' +
-      '*' + meal.angebot2.title + '* : ' + '\n' + meal.angebot2.name + '\n' +
-      '*' + meal.angebot3.title + '* : ' + '\n' + meal.angebot3.name + '\n' +
-      '*' + meal.angebot4.title + '* : ' + '\n' + meal.angebot4.name + '\n', option);
+  generateRespondFromData($, option, ctx);
 }
 
-function displayHTMLResponseForTomorrow(html, ctx){
+function getHTMLResponseForTomorrow(html, ctx){
   $ = cheerio.load(html);
 
   setCurrentDate();
@@ -171,6 +148,25 @@ function displayHTMLResponseForTomorrow(html, ctx){
     return;
   }
 
+
+  generateRespondFromData($, option, ctx);
+
+}
+
+
+/* function that determines the current day triggered by the user request */
+function setCurrentDate(){
+  var day = new Date().getDay();
+  isSunday = (day == 0);
+  isMonday = (day == 1);
+  isTuesday = (day == 2);
+  isWednesday = (day == 3);
+  isThursday = (day == 4);
+  isFriday = (day == 5);
+  isSaturday = (day == 6);
+}
+
+function generateRespondFromData($, option, ctx){
   var meal = {
     date: $('#remote-canteens-show > header > h2').text(),
     html: $('.meals').eq(1).html(),
@@ -195,9 +191,6 @@ function displayHTMLResponseForTomorrow(html, ctx){
       type: null
     }
   }
-
-
-  //reinitialize html table
   $ = cheerio.load(meal.html);
   meal.angebot1.title = $('li:nth-child(1) > h3').text();
   meal.angebot1.name = $('li:nth-child(1) > ul > li > p').text().replace(/(\r\n|\n|\r)/gm,"");
@@ -226,19 +219,6 @@ function displayHTMLResponseForTomorrow(html, ctx){
       '*' + meal.angebot3.title + '*: ' + '\n' + meal.angebot3.name + '\n'  + meal.angebot3.type + '\n' +
       '*' + meal.angebot4.title + '*: ' + '\n' + meal.angebot4.name + '\n'  + meal.angebot4.type + '\n'
       , option);
-}
-
-
-/* function that determines the current day triggered by the user request */
-function setCurrentDate(){
-  var day = new Date().getDay();
-  isSunday = (day == 0);
-  isMonday = (day == 1);
-  isTuesday = (day == 2);
-  isWednesday = (day == 3);
-  isThursday = (day == 4);
-  isFriday = (day == 5);
-  isSaturday = (day == 6);
 }
 
 function foodTypeChecker(htmlString, name){
