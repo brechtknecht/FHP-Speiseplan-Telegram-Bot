@@ -1,35 +1,32 @@
-// Token initialisierung
-var BOT_TOKEN = '332625630:AAH-zM5ZnzFDFNjbxBqwJ4TozdIs7mcfq2A';
+const { Composer, log, session } = require('micro-bot')
+const bot = new Composer()
 
-//Deprecated Dependencies
-//var botan              = require('botanio')(botan_token);
+const parseString = require('xml2js').parseString;
+const request = require('request');
 
-// Dependencies import
-var express            = require('express');
-var http               = require('http');
-var cheerio            = require('cheerio');
-var cheerioTableparser = require('cheerio-tableparser');
-const htmlToJson       = require('html-to-json');
-const HtmlTableToJson  = require('html-table-to-json');
-var app                = express();
-const { Composer }     = require('micro-bot')
-const application      = new Composer()
+// Sets global regex, so that there will always be the custom keyboard triggered
+// if the user gives any input to the bot
+const everything = new RegExp(/./g)
+
+// The actual custom buttons
+const buttonStrings = ["Speiseplan für Heute", "Speiseplan für Morgen"];
+const option = {
+    "parse_mode": "Markdown",
+    "reply_markup": { "keyboard": [[buttonStrings[0]], [buttonStrings[1]]] }
+};
+
 var GoogleSpreadsheet = require('google-spreadsheet');
 var creds = require('./client_secret.json');
 var doc = new GoogleSpreadsheet('14i-pbeTwRkUslD0BsUink6YiqgW16W0ttDrs9iiXZrI');
 
-// Data Tracker
-var isSunday;
-var isMonday;
-var isTuesday;
-var isWednesday;
-var isThursday;
-var isFriday;
-var isSaturday;
+
+//-------------------------------
+var express            = require('express');
+var app                = express();
 
 //Express Gedöns
-//For avoidong Heroku $PORT error
-app.set('port', (process.env.PORT || 5000));
+//For avoidong $PORT error
+app.set('port', (process.env.PORT || 5060));
 
 app.get('/', function(request, response) {
     var result = 'App is running'
@@ -39,244 +36,119 @@ app.get('/', function(request, response) {
 });
 //-------------------------------
 
-// Sets global regex, so that there will always be the custom keyboard triggered
-// if the user gives any input to the bot
-const regex = new RegExp(/./g)
+bot.hears(everything, function(ctx) {
 
-// The actual custom buttons
-const buttonStrings = ["Speiseplan für Heute", "Speiseplan für Morgen"];
-
-application.hears(buttonStrings[0], (ctx) => {
-  var trigger = 'today';
-  var currentUser = ctx.message.from.username;
-  // determines if the user has an username or not
-  if(currentUser === undefined){
-    currentUser = ctx.message.from.id;
-  }
-  const currentDate = convertUnixTimestampToDate(ctx.message.date);
-
-  var request = require('request');
-    request('http://openmensa.org/c/57#11/52.4041/13.0264', function (error, response, body) {
-      getHTMLResponseForToday(body.toString(), ctx, trigger);
-  });
-
-  var option = {
-    "parse_mode": "Markdown"
-  };
-  sendUserDataToGoogleSpreadsheets(currentDate, currentUser, buttonStrings[0]);
-  ctx.telegram.sendMessage(ctx.message.chat.id, "Speiseplan für *heute* anzeigen", option);
-});
-
-application.hears(buttonStrings[1], (ctx) => {
-  var trigger = 'tomorrow';
-  var currentUser = ctx.message.from.username;
-  if(currentUser === undefined){
-    currentUser = ctx.message.from.id;
-  }
-  const currentDate = convertUnixTimestampToDate(ctx.message.date);
-
-  var request = require('request');
-    request('http://openmensa.org/c/57#11/52.4041/13.0264', function (error, response, body) {
-      getHTMLResponseForTomorrow(body.toString(), ctx, trigger);
-  });
-  var option = {
-      "parse_mode": "Markdown"
-  };
-  sendUserDataToGoogleSpreadsheets(currentDate, currentUser, buttonStrings[1]);
-  ctx.telegram.sendMessage(ctx.message.chat.id, `Speiseplan für *morgen* anzeigen`, option);
-});
-
-
-
-
-application.hears(regex, (ctx) => {
-  var currentUser = ctx.message.from.username;
-  if(currentUser === undefined){
-    currentUser = ctx.message.from.id;
-  }
-  var option = {
-              "parse_mode": "Markdown",
-              "reply_markup": {  "keyboard": [[buttonStrings[0]], [buttonStrings[1]]]  }
-  };
-
-  const currentDate = convertUnixTimestampToDate(ctx.message.date);
-
-  sendUserDataToGoogleSpreadsheets(currentDate, currentUser, [ctx.message.text]);
-  ctx.telegram.sendMessage(ctx.message.chat.id, "*Welchen* Speiseplan möchtest du sehen?", option);
-});
-
-
-function getHTMLResponseForToday(html, ctx, trigger){
-  $ = cheerio.load(html);
-
-  setCurrentDate();
-
-  // Send message properties
-  var option = {
-    "parse_mode": "Markdown"
-  };
-
-  if(isSaturday || isSunday){
-    ctx.telegram.sendMessage(ctx.message.chat.id, 'Am *Wochenende* gibts in der Mensa nix zu futtern', option);
-    return;
-  }
-
-  generateRespondFromData($, option, ctx, trigger);
-}
-
-function getHTMLResponseForTomorrow(html, ctx, trigger){
-  $ = cheerio.load(html);
-
-  setCurrentDate();
-
-  // Send message properties
-  var option = {
-    "parse_mode": "Markdown"
-  };
-
-
-  if(isFriday || isSaturday){
-    ctx.telegram.sendMessage(ctx.message.chat.id, 'Am *Wochenende* gibts in der Mensa nix zu futtern', option);
-    return;
-  }
-
-  generateRespondFromData($, option, ctx, trigger);
-}
-
-
-/* function that determines the current day triggered by the user request */
-function setCurrentDate(){
-  var day = new Date().getDay();
-  if(new Date().getHours() > 22){
-    day++;
-  }
-
-  isSunday = (day == 0);
-  isMonday = (day == 1);
-  isTuesday = (day == 2);
-  isWednesday = (day == 3);
-  isThursday = (day == 4);
-  isFriday = (day == 5);
-  isSaturday = (day == 6);
-}
-
-function generateRespondFromData($, option, ctx, trigger){
-  if(trigger == 'today'){
-    trigger = 0;
-  } else if(trigger == 'tomorrow'){
-    trigger = 1;
-  }
-
-  var meal = {
-    date: $('#remote-canteens-show > header > h2').text(),
-    html: $('.meals').eq(trigger).html(),
-    angebot1: {
-      title: null,
-      name: null,
-      type: null,
-    },
-    angebot2: {
-      title: null,
-      name: null,
-      type: null
-    },
-    angebot3: {
-      title: null,
-      name: null,
-      type: null
-    },
-    angebot4: {
-      title: null,
-      name: null,
-      type: null
+    // Gets current user 
+    var currentUser = ctx.message.from.username;
+    var message     = ctx.update.message.text;
+    if(currentUser === undefined){
+        currentUser = ctx.message.from.id;
     }
-  }
-  $ = cheerio.load(meal.html);
-  meal.angebot1.title = $('li:nth-child(1) > h3').text();
-  meal.angebot1.name = $('li:nth-child(1) > ul > li > p').text().replace(/(\r\n|\n|\r)/gm,"");
-  meal.angebot1.type = foodTypeChecker($('li:nth-child(1) > ul > li > .notes').text(), meal.angebot1.name);
 
-  meal.angebot2.title = $('li:nth-child(2) > h3').text();
-  meal.angebot2.name = $('li:nth-child(2) > ul > li > p').text().replace(/(\r\n|\n|\r)/gm,"");
-  meal.angebot2.type = foodTypeChecker($('li:nth-child(2) > ul > li > .notes').text(), meal.angebot2.name);
+    // Sends data to Google Spreadsheets
+    const currentDate = convertUnixTimestampToDate(ctx.message.date);
+    sendUserDataToGoogleSpreadsheets(currentDate, currentUser, message);
 
-  meal.angebot3.title = $('li:nth-child(3) > h3').text();
-  meal.angebot3.name = $('li:nth-child(3) > ul > li > p').text().replace(/(\r\n|\n|\r)/gm,"");
-  meal.angebot3.type = foodTypeChecker($('li:nth-child(3) > ul > li > .notes').text(), meal.angebot3.name);
+    // Sets date adress
+    let dateRef;
+    var button = false;
+    for (let i = 0; i < buttonStrings.length; i++){
+        if(message === buttonStrings[i]){
+            dateRef = i;
+            button  = true;
+        }
+    }
 
-  meal.angebot4.title = $('li:nth-child(4) > h3').text();
-  meal.angebot4.name = $('li:nth-child(4) > ul > li > p').text().replace(/(\r\n|\n|\r)/gm,"");
-  meal.angebot4.type = foodTypeChecker($('li:nth-child(4) > ul > li > .notes').text(), meal.angebot4.name);
+    if(button) {
+        request('http://xml.stw-potsdam.de/xmldata/ka/xmlfhp.php', function (error, response, body) {
+            parseString(body, function (err, result) {
 
-  console.log(meal.angebot1.type);
-  console.log(meal.angebot2.type);
-  console.log(meal.angebot3.type);
-  console.log(meal.angebot4.type);
+                var day = result.menu.datum[dateRef];
 
-  ctx.telegram.sendMessage(ctx.message.chat.id,
-      '*' + meal.angebot1.title + '*: ' + '\n' + meal.angebot1.name + '\n'  + meal.angebot1.type + '\n' +
-      '*' + meal.angebot2.title + '*: ' + '\n' + meal.angebot2.name + '\n'  + meal.angebot2.type + '\n' +
-      '*' + meal.angebot3.title + '*: ' + '\n' + meal.angebot3.name + '\n'  + meal.angebot3.type + '\n' +
-      '*' + meal.angebot4.title + '*: ' + '\n' + meal.angebot4.name + '\n'  + meal.angebot4.type + '\n'
-      , option);
-}
+                // Checks if the dataset for today is empty
+                if(typeof day.angebotnr === 'undefined') {
+                    ctx.telegram.sendMessage(ctx.message.chat.id, "So wie es aussieht gibt's in der Mensa *nix* zu essen… 🍽", option);
+                    return;
+                }
 
-function foodTypeChecker(htmlString, name){
-  var vegetarisch = '🌽 - vegetarisch'
-  var vegan = '🍆 - vegan';
-  var gefluegel = '🐔 - mit Geflügel';
-  var schweinefleisch = '🐖 - mit Schweinefleisch';
-  var rindfleisch = '🐄 - mit Rindfleisch';
-  var fisch = '🐟 - mit Fisch';
-  var lamm  = '🐑 - mit Lamm';
+                var angebote = [];
+                for (let i = 0; i < day.angebotnr.length; i++){
+                    var ref = day.angebotnr[i];
 
-  var returnValue = '';
+                    
+                    var dataIsValid = !(ref.preis_s[0] == '');
 
-  if(htmlString.includes('vegetabil')){
-    returnValue = returnValue + ' ' + vegetarisch;
-  }
-  if(htmlString.includes('mensaVital') || name.includes('(vegan)')){
-    returnValue = returnValue + ' ' + vegan;
-  }
-  if(htmlString.includes('Geflügelfleisch')){
-    returnValue = returnValue + ' ' + gefluegel;
-  }
-  if(htmlString.includes('Schweinefleisch')){
-    returnValue = returnValue + ' ' + schweinefleisch;
-  }
-  if(htmlString.includes('Rindfleisch')){
-    returnValue = returnValue + ' ' + rindfleisch;
-  }
-  if(htmlString.includes('Lamm')){
-    returnValue = returnValue + ' ' + lamm;
-  }
-  if(htmlString.includes('Fisch')){
-    returnValue = returnValue + ' ' + fisch;
-  }
-  return returnValue;
+                    if(dataIsValid) {
+
+                        angebote[i] = {
+                            angebot: ref.titel,
+                            beschreibung: ref.beschreibung,
+                            labels: foodTypeChecker(ref.labels[0].label[0].$.name)
+                        }
+
+                    } else {
+                        angebote[i] = { angebot:'', beschreibung:'', labels: ''}
+                    }
+                }
+
+                var parsedResponse = '';
+                for (let i = 0; i < angebote.length; i++){
+                    parsedResponse += '*' + angebote[i].angebot + '*: ' + '\n' + angebote[i].beschreibung + '\n'  + angebote[i].labels + '\n' 
+                }
+
+                ctx.telegram.sendMessage(ctx.message.chat.id, parsedResponse, option);
+            });
+        })   
+    } else {
+        ctx.telegram.sendMessage(ctx.message.chat.id, "Für wann brauchst du den Speiseplan? 🍱", option);
+    }
+});
+
+function foodTypeChecker(label){
+    var vegetarisch = '🌽 - vegetarisch'
+    var vegan = '🍆 - vegan';
+    var gefluegel = '🐔 - mit Geflügel';
+    var schweinefleisch = '🐖 - mit Schweinefleisch';
+    var rindfleisch = '🐄 - mit Rindfleisch';
+    var fisch = '🐟 - mit Fisch';
+    var lamm  = '🐑 - mit Lamm';
+  
+    var returnValue = '';
+    
+    if(label == 'schweinefleisch') {
+        return schweinefleisch;
+    }
+    if(label == 'vegetarisch') {
+        return vegetarisch;
+    }
+    if(label == 'gefluegel') {
+        return gefluegel;
+    }
+    if(label == 'lamm') {
+        return lamm;
+    } 
+    if(label == 'rindfleisch') {
+        return rindfleisch;
+    }
+    if(label == 'fisch') {
+        return fisch;
+    }
+    if(label == 'vegan') {
+        return vegan;
+    }
+    return returnValue;
 }
 
 function sendUserDataToGoogleSpreadsheets(currentDate, usedUsername, usedCommand){
-  doc.useServiceAccountAuth(creds, function (err, command) {
-    doc.addRow(1, { msg_date: currentDate, user_name: usedUsername, command: usedCommand}, function(){
-      console.log('Sent Userdata to Google Spreadsheet');
-    })
-  });
+    doc.useServiceAccountAuth(creds, function (err, command) {
+        doc.addRow(1, { msg_date: currentDate, user_name: usedUsername, command: usedCommand}, function(){
+            console.log('Sent Userdata to Google Spreadsheet');
+        })
+    });
 }
 
 function convertUnixTimestampToDate(unix_timestamp){
-  var date = new Date(unix_timestamp*1000);
-
-  console.log(unix_timestamp*1000);
-  /*var day = date.getDay();
-  var hours = date.getHours();
-  var minutes = "0" + date.getMinutes();
-  var seconds = "0" + date.getSeconds();
-
-  return hours + ':' + minutes.substr(-2) + ':' + seconds.substr(-2);*/
-  return date.toISOString();
+    return new Date(unix_timestamp*1000).toISOString();
 }
 
-
-//exportiert ALLES!!!!!
-module.exports = application
+module.exports = bot

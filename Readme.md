@@ -1,41 +1,30 @@
-# FHP Speiseplan Bot
+# speiseplan-api
 
-Ein Telegram Bot für die Mensa Kiepenheueralle der Fachhochschule Potsdam.
+[![Build Status](https://travis-ci.org/n/speiseplan-api.svg?branch=master)](https://travis-ci.org/n/speiseplan-api)
 
+[![Deploy to now](https://deploy.now.sh/static/button.svg)](https://deploy.now.sh/?repo=https://github.com/n/speiseplan-api)
 
-### Installing
+## Usage
 
-Installiert dieses Respoitory, indem ihr es herunterladet, entpackt und dann mit npm alle dependencies installiert.
-
-```
-npm install
-```
-
-
-## Bot deployment auf eurer local Machine
-
-Um den Bot auf eurer local Machine zum Laufen zu bringen benötigt ihr lediglich einen Bot Token für euren Bot vom [BotFather](https://telegram.me/BotFather).
-
-Der Bot lässt sich dann mit eurem Token starten.
-
-```
-BOT_TOKEN='$BOT_TOKEN' npm start
+```sh
+$ npm install
+$ BOT_TOKEN='123:......' npm run dev
 ```
 
-## Bot deployment auf einem server
-
-Zum jetzigen Zeitpunkt läuft der Bot auf dem [ZEIT.co Deployment Service](https://www.zeit.co). Ihr könnt diesen Bot modifizieren und selbst auf dem Server hosten. Zum Starten benötigt ihr folgenden command.
-
-```
-now -e BOT_TOKEN='$BOT_TOKEN'
+```sh
+$ yarn
+$ BOT_TOKEN='123:......' yarn dev
 ```
 
-Meißtens schaltet sich die Zeit App nach einiger Zeit wieder ab. Um eine kontinuierliche runtime zu gewährleisten müsst ihr euren App Status setzen. Den $NOW_BOT_DOMAIN findet ihr auf eurem [ZEIT.co Dashboard](https://zeit.co/dashboard/instances).
+## Deployment
 
+This bot can be deployed to [now](https://zeit.co/now) by Zeit.
+Assuming you've got `now` installed and set up:
+
+```sh
+$ now -e BOT_TOKEN='123:......' n/speiseplan-api
 ```
-now scale $NOW_BOT_DOMAIN 1
-```
 
-Please read [CONTRIBUTING.md](https://gist.github.com/PurpleBooth/b24679402957c63ec426) for details on our code of conduct, and the process for submitting pull requests to us.
+Alternative, deploy right now without even leaving the browser:
 
-* **Felix Tesche** - [Mr.Fesch](http://www.mrfesch.com)
+[![Deploy to now](https://deploy.now.sh/static/button.svg)](https://deploy.now.sh/?repo=https://github.com/n/speiseplan-api)
