@@ -2,6 +2,8 @@
 
 Ein Telegram Bot für die Mensa Kiepenheueralle der Fachhochschule Potsdam.
 
+[FH;P Speiseplan Bot](https://t.me/FHPSpeiseplanBot)
+
 ### Installing
 Installiert dieses Respoitory, indem ihr es herunterladet, entpackt und dann mit npm alle dependencies installiert.
 
