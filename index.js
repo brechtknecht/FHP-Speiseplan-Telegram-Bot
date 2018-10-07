@@ -60,22 +60,21 @@ bot.hears(everything, function(ctx) {
     }
 
     if(button) {
-        request('http://xml.stw-potsdam.de/xmldata/ka/xmlfhp.php', function (error, response, body) {
+        request('https://xml.stw-potsdam.de/xmldata/ka/xml.php', function (error, response, body) {
             parseString(body, function (err, result) {
 
                 var day = result.menu.datum[dateRef];
-
+                
                 // Checks if the dataset for today is empty
                 if(typeof day.angebotnr === 'undefined') {
-                    ctx.telegram.sendMessage(ctx.message.chat.id, "So wie es aussieht gibt's in der Mensa *nix* zu essen… 🍽", option);
-                    return;
+                  ctx.telegram.sendMessage(ctx.message.chat.id, "So wie es aussieht gibt's in der Mensa *nix* zu essen… 🍽", option);
+                  return;
                 }
 
                 var angebote = [];
                 for (let i = 0; i < day.angebotnr.length; i++){
                     var ref = day.angebotnr[i];
 
-                    
                     var dataIsValid = !(ref.preis_s[0] == '');
 
                     if(dataIsValid) {
