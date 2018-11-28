@@ -37,7 +37,14 @@ app.get('/', function(request, response) {
 //-------------------------------
 
 bot.hears(everything, function(ctx) {
+    handleRequests(ctx);
+});
 
+bot.command('heute', function(ctx) {
+    handleRequests(ctx);
+});
+
+function handleRequests(ctx) {
     // Gets current user 
     var currentUser = ctx.message.from.username;
     var message     = ctx.update.message.text;
@@ -45,36 +52,50 @@ bot.hears(everything, function(ctx) {
         currentUser = ctx.message.from.id;
     }
 
+    console.log(message);
+
     // Sends data to Google Spreadsheets
     const currentDate = convertUnixTimestampToDate(ctx.message.date);
     sendUserDataToGoogleSpreadsheets(currentDate, currentUser, message);
 
+    // Get commands
+    var todayCommandList = ['/heute', 'heute', 'Heute', 'jetzt', 'Jetzt', 'today', 'Today'];
+    var tomorrowCommandList = ['/morgen','morgen', 'Morgen', 'tomorrow', 'Tomorrow'];
+
     // Sets date adress
     let dateRef;
-    var button = false;
+    var response = false;
     for (let i = 0; i < buttonStrings.length; i++){
         if(message === buttonStrings[i]){
             dateRef = i;
-            button  = true;
+            response  = true;
+        }
+        else if (todayCommandList.includes(message)) {
+            dateRef = i;
+            response  = true;
+        }
+        else if(tomorrowCommandList.includes(message)){
+            dateRef = i;
+            response  = true;
         }
     }
 
-    if(button) {
-        request('https://xml.stw-potsdam.de/xmldata/ka/xml.php', function (error, response, body) {
+    if(response) {
+        request('http://xml.stw-potsdam.de/xmldata/ka/xmlfhp.php', function (error, response, body) {
             parseString(body, function (err, result) {
-
                 var day = result.menu.datum[dateRef];
                 
                 // Checks if the dataset for today is empty
-                if(typeof day.angebotnr === 'undefined') {
-                  ctx.telegram.sendMessage(ctx.message.chat.id, "So wie es aussieht gibt's in der Mensa *nix* zu essen… 🍽", option);
-                  return;
+                if(day.angebotnr === 'undefined') {
+                    ctx.telegram.sendMessage(ctx.message.chat.id, "So wie es aussieht gibt's in der Mensa *nix* zu essen… 🍽", option);
+                    return;
                 }
 
                 var angebote = [];
                 for (let i = 0; i < day.angebotnr.length; i++){
                     var ref = day.angebotnr[i];
 
+                    
                     var dataIsValid = !(ref.preis_s[0] == '');
 
                     if(dataIsValid) {
@@ -101,7 +122,7 @@ bot.hears(everything, function(ctx) {
     } else {
         ctx.telegram.sendMessage(ctx.message.chat.id, "Für wann brauchst du den Speiseplan? 🍱", option);
     }
-});
+}
 
 function foodTypeChecker(label){
     var vegetarisch = '🌽 - vegetarisch'
