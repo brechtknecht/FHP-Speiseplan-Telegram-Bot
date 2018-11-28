@@ -87,7 +87,8 @@ function handleRequests(ctx) {
                 
                 // Checks if the dataset for today is empty
                 if(day.angebotnr === 'undefined') {
-                    ctx.telegram.sendMessage(ctx.message.chat.id, "So wie es aussieht gibt's in der Mensa *nix* zu essen… 🍽", option);
+                    ctx.telegram.sendMessage(ctx.message.chat.id, "Computer sagt nein. Irgendwas ist heute an den Daten nicht richtig mit den Daten. Ich bin dran, das Problem zu lösen. 😉 Stattdessen gibt's heute eine Katze.", option);
+                    ctx.replyWithPhoto('https://cataas.com/cat');
                     return;
                 }
 
@@ -118,7 +119,10 @@ function handleRequests(ctx) {
 
                 ctx.telegram.sendMessage(ctx.message.chat.id, parsedResponse, option);
             });
-        })   
+        }).catch(function () {
+            ctx.telegram.sendMessage(ctx.message.chat.id, "Computer sagt nein. Irgendwas ist heute an den Daten nicht richtig mit den Daten. Ich bin dran, das Problem zu lösen. 😉 Stattdessen gibt's heute eine Katze.", option);
+            ctx.replyWithPhoto('https://cataas.com/cat');
+        });   
     } else {
         ctx.telegram.sendMessage(ctx.message.chat.id, "Für wann brauchst du den Speiseplan? 🍱", option);
     }
