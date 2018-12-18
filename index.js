@@ -53,14 +53,14 @@ bot.command('filter', function(ctx){
     const testMenu = Telegraf.Extra
         .markdown()
         .markup((m) => m.inlineKeyboard([
-            m.callbackButton('vegetarier', 'veggie'),
-            m.callbackButton('veganer', 'vegan'),
-            m.callbackButton('Wurst', 'saussage')
+            m.callbackButton('Vegetarier*in 🌽', 'vegetarisch'),
+            m.callbackButton('Veganer*in 🍆', 'vegan'),
+            m.callbackButton('Wurst 🐔', 'all')
     ]));
 
     ctx.reply('Bist du Vegetarier, veganer oder ist dir alles Wurst?', testMenu);
 
-    bot.action('veggie', function(ctx){
+    bot.action('vegetarisch', function(ctx){
         ctx.reply('Deine Einstellungen wurden auf vegetarisch geändert.').then(() => {
             handleUserData(ctx);
         })
@@ -72,7 +72,7 @@ bot.command('filter', function(ctx){
         })
     })
 
-    bot.action('saussage', function(ctx){
+    bot.action('all', function(ctx){
         ctx.reply('Deine Einstellungen wurden zurückgesetzt auf alle Ergebnisse anzeigen.').then(() => {
             handleUserData(ctx);
         })
@@ -124,7 +124,8 @@ function handleRequests(ctx) {
             parseString(body, function (err, result) {
                 var day = result.menu.datum[dateRef];
                 
-                console.log(typeof day.angebotnr);
+                let userID = ctx.message.from.id;
+                let user = db.get('user').find({'id': userID}).value();
 
                 // Checks if the dataset for today is empty
                 if(day.angebotnr === 'undefined' || day.angebotnr == undefined) {
@@ -155,7 +156,16 @@ function handleRequests(ctx) {
 
                 var parsedResponse = '';
                 for (let i = 0; i < angebote.length; i++){
-                    parsedResponse += '*' + angebote[i].angebot + '*: ' + '\n' + angebote[i].beschreibung + '\n'  + angebote[i].labels + '\n' 
+                    if(angebote[i].labels[1] == user.preference){
+                        parsedResponse += '*' + angebote[i].angebot + '*: ' + '\n' + angebote[i].beschreibung + '\n'  + angebote[i].labels[0] + '\n' 
+                    } else if(user.preference == 'all'){
+                        parsedResponse += '*' + angebote[i].angebot + '*: ' + '\n' + angebote[i].beschreibung + '\n'  + angebote[i].labels[0] + '\n' 
+                    }
+                }
+
+                if(parsedResponse == ''){
+                    ctx.telegram.sendMessage(ctx.message.chat.id, 'Schade heute scheint es nichts ' + user.preference + 'es in der Mensa zu geben. Salat gibt es aber immer!', option);
+                    return;
                 }
 
                 ctx.telegram.sendMessage(ctx.message.chat.id, parsedResponse, option);
@@ -178,25 +188,25 @@ function foodTypeChecker(label){
     var returnValue = '';
     
     if(label == 'schweinefleisch') {
-        return schweinefleisch;
+        return [schweinefleisch, 'all'];
     }
     if(label == 'vegetarisch') {
-        return vegetarisch;
+        return [vegetarisch, 'vegetarisch'];
     }
     if(label == 'gefluegel') {
-        return gefluegel;
+        return [gefluegel, 'all'];
     }
     if(label == 'lamm') {
-        return lamm;
+        return [lamm, 'all'];
     } 
     if(label == 'rindfleisch') {
-        return rindfleisch;
+        return [rindfleisch, 'all'];
     }
     if(label == 'fisch') {
-        return fisch;
+        return [fisch, 'vegetarisch'];
     }
     if(label == 'vegan') {
-        return vegan;
+        return [vegan, 'vegan'];
     }
     return returnValue;
 }
