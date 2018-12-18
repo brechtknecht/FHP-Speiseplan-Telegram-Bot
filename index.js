@@ -85,8 +85,10 @@ function handleRequests(ctx) {
             parseString(body, function (err, result) {
                 var day = result.menu.datum[dateRef];
                 
+                console.log(typeof day.angebotnr);
+
                 // Checks if the dataset for today is empty
-                if(day.angebotnr === 'undefined') {
+                if(day.angebotnr === 'undefined' || day.angebotnr == undefined) {
                     ctx.telegram.sendMessage(ctx.message.chat.id, "Computer sagt nein. Irgendwas ist heute an den Daten nicht richtig mit den Daten. Ich bin dran, das Problem zu lösen. 😉 Stattdessen gibt's heute eine Katze.", option);
                     ctx.replyWithPhoto('https://cataas.com/cat');
                     return;
@@ -119,10 +121,7 @@ function handleRequests(ctx) {
 
                 ctx.telegram.sendMessage(ctx.message.chat.id, parsedResponse, option);
             });
-        }).catch(function () {
-            ctx.telegram.sendMessage(ctx.message.chat.id, "Computer sagt nein. Irgendwas ist heute an den Daten nicht richtig mit den Daten. Ich bin dran, das Problem zu lösen. 😉 Stattdessen gibt's heute eine Katze.", option);
-            ctx.replyWithPhoto('https://cataas.com/cat');
-        });   
+        });
     } else {
         ctx.telegram.sendMessage(ctx.message.chat.id, "Für wann brauchst du den Speiseplan? 🍱", option);
     }
@@ -172,7 +171,12 @@ function sendUserDataToGoogleSpreadsheets(currentDate, usedUsername, usedCommand
 }
 
 function convertUnixTimestampToDate(unix_timestamp){
-    return new Date(unix_timestamp*1000).toISOString();
+    var date = new Date(unix_timestamp * 1000);
+    var day = date.getDay();
+    var month = date.getMonth()
+    var year = date.getYear();
+    // Changed Date for Google Spreadsheet
+    return day + '.' + month + 1 + '.' + year;
 }
 
 module.exports = bot
