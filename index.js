@@ -49,13 +49,17 @@ bot.command('heute', function(ctx) {
     handleRequests(ctx);
 });
 
+bot.command('morgen', function(ctx) {
+    handleRequests(ctx);
+});
+
 bot.command('filter', function(ctx){
     const testMenu = Telegraf.Extra
         .markdown()
         .markup((m) => m.inlineKeyboard([
             m.callbackButton('Vegetarier*in 🌽', 'vegetarisch'),
             m.callbackButton('Veganer*in 🍆', 'vegan'),
-            m.callbackButton('Wurst 🐔', 'all')
+            m.callbackButton('Wurst 🌭', 'all')
     ]));
 
     ctx.reply('Bist du Vegetarier, veganer oder ist dir alles Wurst?', testMenu);
@@ -110,11 +114,11 @@ function handleRequests(ctx) {
             response  = true;
         }
         else if (todayCommandList.includes(message)) {
-            dateRef = i;
+            dateRef = 0;
             response  = true;
         }
         else if(tomorrowCommandList.includes(message)){
-            dateRef = i;
+            dateRef = 1;
             response  = true;
         }
     }
