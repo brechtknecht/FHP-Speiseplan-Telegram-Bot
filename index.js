@@ -1,8 +1,18 @@
 const { Composer, log, session } = require('micro-bot')
 const bot = new Composer()
 
+const Telegraf = require('telegraf')
+
 const parseString = require('xml2js').parseString;
 const request = require('request');
+
+/* Lightweight Database init */ 
+const low = require('lowdb')
+const FileSync = require('lowdb/adapters/FileSync')
+
+const adapter = new FileSync('db.json')
+const db = low(adapter)
+
 
 // Sets global regex, so that there will always be the custom keyboard triggered
 // if the user gives any input to the bot
@@ -35,14 +45,43 @@ app.get('/', function(request, response) {
     console.log('App is running, server is listening on port ', app.get('port'));
 });
 //-------------------------------
-
-bot.hears(everything, function(ctx) {
-    handleRequests(ctx);
-});
-
 bot.command('heute', function(ctx) {
     handleRequests(ctx);
 });
+
+bot.command('filter', function(ctx){
+    const testMenu = Telegraf.Extra
+        .markdown()
+        .markup((m) => m.inlineKeyboard([
+            m.callbackButton('vegetarier', 'veggie'),
+            m.callbackButton('veganer', 'vegan'),
+            m.callbackButton('Wurst', 'saussage')
+    ]));
+
+    ctx.reply('Bist du Vegetarier, veganer oder ist dir alles Wurst?', testMenu);
+
+    bot.action('veggie', function(ctx){
+        ctx.reply('Deine Einstellungen wurden auf vegetarisch geändert.').then(() => {
+            handleUserData(ctx);
+        })
+    })
+
+    bot.action('vegan', function(ctx){
+        ctx.reply('Deine Einstellungen wurden auf vegan geändert.').then(() => {
+            handleUserData(ctx);
+        })
+    })
+
+    bot.action('saussage', function(ctx){
+        ctx.reply('Deine Einstellungen wurden zurückgesetzt auf alle Ergebnisse anzeigen.').then(() => {
+            handleUserData(ctx);
+        })
+    })
+});
+
+bot.hears(everything, function(ctx) {
+    handleRequests(ctx);
+}); 
 
 function handleRequests(ctx) {
     // Gets current user 
@@ -89,7 +128,7 @@ function handleRequests(ctx) {
 
                 // Checks if the dataset for today is empty
                 if(day.angebotnr === 'undefined' || day.angebotnr == undefined) {
-                    ctx.telegram.sendMessage(ctx.message.chat.id, "Computer sagt nein. Irgendwas ist heute an den Daten nicht richtig mit den Daten. Ich bin dran, das Problem zu lösen. 😉 Stattdessen gibt's heute eine Katze.", option);
+                    ctx.telegram.sendMessage(ctx.message.chat.id, "Computer sagt nein. Für deine Anfrage liegen in der Mensa noch keine Daten vor, versuche es später noch einmal! 😉 Stattdessen gibt's erstmal eine Katze.", option);
                     ctx.replyWithPhoto('https://cataas.com/cat');
                     return;
                 }
@@ -160,6 +199,22 @@ function foodTypeChecker(label){
         return vegan;
     }
     return returnValue;
+}
+
+function handleUserData(ctx) {
+    let userID = ctx.update.callback_query.from.id;
+    let user = db.get('user').find({'id': userID}).value();
+
+    /* Check if user has an Entry – if not create one, else update */
+    if(typeof user === 'undefined') {
+        console.log('Noch kein Eintrag in der Datenbank – Es wird einer erstellt');
+        db.get('user')
+            .push({ id: userID, preference: ctx.match })
+            .write()
+    } else {
+        db.get('user').find({'id': userID}).set('preference', ctx.match)
+            .write()
+    }
 }
 
 function sendUserDataToGoogleSpreadsheets(currentDate, usedUsername, usedCommand){
