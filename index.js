@@ -95,7 +95,12 @@ function handleRequests(ctx) {
         currentUser = ctx.message.from.id;
     }
 
-    console.log(message);
+
+    db.get('user')
+        .push({ id: ctx.message.from.id, preference: "all" })
+        .write()
+
+    console.log('Sent Message: ' + message);
 
     // Sends data to Google Spreadsheets
     const currentDate = convertUnixTimestampToDate(ctx.message.date);
@@ -160,10 +165,18 @@ function handleRequests(ctx) {
 
                 var parsedResponse = '';
                 for (let i = 0; i < angebote.length; i++){
-                    if(angebote[i].labels[1] == user.preference){
+                    let labelsReference = angebote[i].labels[1];
+
+                    if(labelsReference == user.preference && user.preference != 'all'){
                         parsedResponse += '*' + angebote[i].angebot + '*: ' + '\n' + angebote[i].beschreibung + '\n'  + angebote[i].labels[0] + '\n' 
-                    } else if(user.preference == 'all'){
+                    }
+                    if(user.preference == 'all'){
                         parsedResponse += '*' + angebote[i].angebot + '*: ' + '\n' + angebote[i].beschreibung + '\n'  + angebote[i].labels[0] + '\n' 
+                    }
+                    if(user.preference == 'vegetarisch'){
+                        if(labelsReference == 'vegetarisch' || labelsReference == 'vegan'){
+                            parsedResponse += '*' + angebote[i].angebot + '*: ' + '\n' + angebote[i].beschreibung + '\n'  + angebote[i].labels[0] + '\n' 
+                        }
                     }
                 }
 
@@ -228,6 +241,7 @@ function handleUserData(ctx) {
     } else {
         db.get('user').find({'id': userID}).set('preference', ctx.match)
             .write()
+        console.log('User Data from ' + userID + ' updated to: ' + ctx.match + ' ✅');
     }
 }
 
@@ -240,12 +254,22 @@ function sendUserDataToGoogleSpreadsheets(currentDate, usedUsername, usedCommand
 }
 
 function convertUnixTimestampToDate(unix_timestamp){
-    var date = new Date(unix_timestamp * 1000);
-    var day = date.getDay();
-    var month = date.getMonth()
-    var year = date.getYear();
-    // Changed Date for Google Spreadsheet
-    return day + '.' + month + 1 + '.' + year;
+    var today = new Date();
+    var dd = today.getDate();
+    var mm = today.getMonth()+1; //January is 0!
+    var yyyy = today.getFullYear();
+
+    if(dd < 10) {
+        dd = '0'+dd
+    } 
+
+    if(mm < 10) {
+        mm = '0'+mm
+    } 
+
+    today = dd + '.' + mm + '.' + yyyy;
+
+    return today;
 }
 
 module.exports = bot
