@@ -19,7 +19,7 @@ Der Bot lässt sich dann mit eurem Token starten.
 BOT_TOKEN='$BOT_TOKEN' npm start
 ```
 
-## Bot deployment auf einem server
+## Bot deployment auf einem Server
 
 Zum jetzigen Zeitpunkt läuft der Bot auf dem [ZEIT.co Deployment Service](https://www.zeit.co). Ihr könnt diesen Bot modifizieren und selbst auf dem Server hosten. Zum Starten benötigt ihr folgenden command.
 
