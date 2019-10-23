@@ -182,6 +182,13 @@ function handleRequests(ctx) {
                 var parsedResponse = '';
                 for (let i = 0; i < angebote.length; i++){
                     let labelsReference = angebote[i].labels[1];
+                    console.log("Usercheck: " , user)
+                    if(typeof user === 'undefined') {
+                        console.log("undefined alla");
+                        user = {
+                            preference : "all"
+                        }
+                    }
 
                     if(labelsReference == user.preference && user.preference != 'all'){
                         parsedResponse += '*' + angebote[i].angebot + '*: ' + '\n' + angebote[i].beschreibung + '\n'  + angebote[i].labels[0] + '\n' 
@@ -247,6 +254,8 @@ function foodTypeChecker(label){
 function handleUserData(ctx) {
     let userID = ctx.update.callback_query.from.id;
     let user = db.get('user').find({'id': userID}).value();
+
+    console.log("Searching for UserID: ", userID);
 
     /* Check if user has an Entry – if not create one, else update */
     if(typeof user === 'undefined') {
