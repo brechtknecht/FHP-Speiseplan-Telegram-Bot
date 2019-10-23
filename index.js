@@ -43,6 +43,7 @@ app.get('/', function(request, response) {
     response.send(result);
 }).listen(app.get('port'), function() {
     console.log('App is running, server is listening on port ', app.get('port'));
+    console.log('If micro-bot is not displaying a message below your connection may be disrupted');
 });
 //-------------------------------
 bot.command('heute', function(ctx) {
@@ -131,6 +132,12 @@ function handleRequests(ctx) {
     if(response) {
         request('http://xml.stw-potsdam.de/xmldata/ka/xmlfhp.php', function (error, response, body) {
             parseString(body, function (err, result) {
+                if(result.hasOwnProperty('p')){
+                    console.log('Database is temporary not responding')
+                }
+                if(result.menu.datum.length == 0){
+                    console.log("Fatal error in FH XML database")
+                }
                 var day = result.menu.datum[dateRef];
                 
                 let userID = ctx.message.from.id;
@@ -150,18 +157,27 @@ function handleRequests(ctx) {
                     
                     var dataIsValid = !(ref.preis_s[0] == '');
 
+
+                    if(ref.labels[0].length == 0) {
+                        ref.labels[0].push({label : {
+                            0: 'empty'
+                        }});
+                    }
                     if(dataIsValid) {
 
                         angebote[i] = {
                             angebot: ref.titel,
                             beschreibung: ref.beschreibung,
-                            labels: foodTypeChecker(ref.labels[0].label[0].$.name)
+                            // labels: foodTypeChecker(ref.labels[0].label[0].$.name)
+                            labels: foodTypeChecker( ref.labels[0].label[0].$.name)
                         }
 
                     } else {
                         angebote[i] = { angebot:'', beschreibung:'', labels: ''}
                     }
                 }
+
+                console.log(angebote);
 
                 var parsedResponse = '';
                 for (let i = 0; i < angebote.length; i++){
