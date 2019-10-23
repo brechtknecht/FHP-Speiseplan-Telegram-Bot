@@ -1,5 +1,4 @@
 {
     "name": "FHP-Speiseplan-Telegram-Bot (Late 2019)",
-    "script": "micro-bot",
-    "args": "-t 524870110:AAFmGUmtyGKJWR7q5ZWxZdxFgCqVE3IGv1Y index.js"
-  }
+    "script": "micro-bot -t 524870110:AAFmGUmtyGKJWR7q5ZWxZdxFgCqVE3IGv1Y index.js"
+}
