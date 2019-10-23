@@ -1,0 +1,5 @@
+{
+    "name": "FHP-Speiseplan-Telegram-Bot (Late 2019)",
+    "script": "npm",
+    "args": "start-testbot"
+  }
