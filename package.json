@@ -8,7 +8,8 @@
   },
   "main": "index.js",
   "scripts": {
-    "start": "micro-bot -d"
+    "start": "micro-bot",
+    "start-testbot" : "BOT_TOKEN='524870110:AAFmGUmtyGKJWR7q5ZWxZdxFgCqVE3IGv1Y' npm start"
   },
   "engines": {
     "node": ">=8.5.0"
@@ -16,11 +17,13 @@
   "author": "n <n>",
   "license": "MIT",
   "dependencies": {
+    "audit": "0.0.6",
     "express": "^4.16.3",
     "google-spreadsheet": "^2.0.6",
     "lowdb": "^1.0.0",
     "micro-bot": "^2.2.4",
     "request": "^2.88.0",
+    "telegraf": "^3.32.0",
     "xml2js": "^0.4.19"
   },
   "devDependencies": {
