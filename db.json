@@ -1,8 +1,11 @@
 {
   "user": [
-    
+    {
+      "id": 190640851,
+      "preference": "vegan"
+    }
   ],
   "statistics": {
-    "counter": 53
+    "counter": 70
   }
 }

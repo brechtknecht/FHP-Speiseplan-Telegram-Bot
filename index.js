@@ -97,6 +97,7 @@ function handleRequests(ctx) {
     }
 
     let found_user = db.get('user').find({'id': ctx.message.from.id}).value();
+    console.log('Found user:', found_user);
     if(found_user === 'undefined') {
         db.get('user')
             .push({ id: ctx.message.from.id, preference: "all" })
@@ -269,7 +270,7 @@ function handleUserData(ctx) {
             .push({ id: userID, preference: ctx.match })
             .write()
     } else {
-        db.get('user').find({'id': userID}).update('preference', ctx.match)
+        db.get('user').find({'id': userID}).set('preference', ctx.match)
             .write()
         console.log('User Data from ' + userID + ' updated to: ' + ctx.match + ' ✅');
     }
