@@ -25,9 +25,6 @@ const option = {
     "reply_markup": { "keyboard": [[buttonStrings[0]], [buttonStrings[1]]] }
 };
 
-var GoogleSpreadsheet = require('google-spreadsheet');
-var creds = require('./client_secret.json');
-var doc = new GoogleSpreadsheet('14i-pbeTwRkUslD0BsUink6YiqgW16W0ttDrs9iiXZrI');
 
 
 //-------------------------------
@@ -109,7 +106,6 @@ function handleRequests(ctx) {
     // Sends data to Google Spreadsheets
     const currentDate = convertUnixTimestampToDate(ctx.message.date);
     commitUserDataToLocalDB(currentDate, currentUser, message);
-    // sendUserDataToGoogleSpreadsheets(currentDate, currentUser, message);
 
     // Get commands
     var todayCommandList = ['/heute', 'heute', 'Heute', 'jetzt', 'Jetzt', 'today', 'Today'];
@@ -274,14 +270,6 @@ function handleUserData(ctx) {
             .write()
         console.log('User Data from ' + userID + ' updated to: ' + ctx.match + ' ✅');
     }
-}
-
-function sendUserDataToGoogleSpreadsheets(currentDate, usedUsername, usedCommand){
-    doc.useServiceAccountAuth(creds, function (err, command) {
-        doc.addRow(1, { msg_date: currentDate, user_name: usedUsername, command: usedCommand}, function(){
-            console.log('Sent Userdata to Google Spreadsheet');
-        })
-    });
 }
 
 function commitUserDataToLocalDB (currentDate, usedUsername, usedCommand) {

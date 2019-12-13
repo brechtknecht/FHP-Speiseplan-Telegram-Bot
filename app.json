@@ -1,8 +1,0 @@
-{
-    "name": "FHP-Speiseplan-Telegram-Bot (Late 2019)",
-    "script": "npm",
-    "args": "start",
-    "env": {
-        "BOT_TOKEN": "359029762:AAFbdOlXZnK5zCnDms1uQAbctX4dil-Mlq0"
-      }
-}
