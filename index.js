@@ -96,16 +96,19 @@ function handleRequests(ctx) {
         currentUser = ctx.message.from.id;
     }
 
-
-    db.get('user')
-        .push({ id: ctx.message.from.id, preference: "all" })
-        .write()
+    let found_user = db.get('user').find({'id': ctx.message.from.id}).value();
+    if(found_user === 'undefined') {
+        db.get('user')
+            .push({ id: ctx.message.from.id, preference: "all" })
+            .write()
+    }
 
     console.log('Sent Message: ' + message);
 
     // Sends data to Google Spreadsheets
     const currentDate = convertUnixTimestampToDate(ctx.message.date);
-    sendUserDataToGoogleSpreadsheets(currentDate, currentUser, message);
+    commitUserDataToLocalDB(currentDate, currentUser, message);
+    // sendUserDataToGoogleSpreadsheets(currentDate, currentUser, message);
 
     // Get commands
     var todayCommandList = ['/heute', 'heute', 'Heute', 'jetzt', 'Jetzt', 'today', 'Today'];
@@ -255,6 +258,8 @@ function handleUserData(ctx) {
     let userID = ctx.update.callback_query.from.id;
     let user = db.get('user').find({'id': userID}).value();
 
+    console.log(user);
+
     console.log("Searching for UserID: ", userID);
 
     /* Check if user has an Entry – if not create one, else update */
@@ -264,7 +269,7 @@ function handleUserData(ctx) {
             .push({ id: userID, preference: ctx.match })
             .write()
     } else {
-        db.get('user').find({'id': userID}).set('preference', ctx.match)
+        db.get('user').find({'id': userID}).update('preference', ctx.match)
             .write()
         console.log('User Data from ' + userID + ' updated to: ' + ctx.match + ' ✅');
     }
@@ -276,6 +281,11 @@ function sendUserDataToGoogleSpreadsheets(currentDate, usedUsername, usedCommand
             console.log('Sent Userdata to Google Spreadsheet');
         })
     });
+}
+
+function commitUserDataToLocalDB (currentDate, usedUsername, usedCommand) {
+    db.get('statistics').update('counter', n => n + 1)
+      .write();
 }
 
 function convertUnixTimestampToDate(unix_timestamp){
