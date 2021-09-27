@@ -1,3 +1,5 @@
+// VERSION Late 2021
+
 const { Composer, log, session } = require('micro-bot')
 const bot = new Composer()
 
