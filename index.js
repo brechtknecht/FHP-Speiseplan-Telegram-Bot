@@ -155,38 +155,56 @@ function handleRequests(ctx) {
                 var angebote = [];
                 for (let i = 0; i < day.angebotnr.length; i++){
                     var ref = day.angebotnr[i];
-
-                    
                     var dataIsValid = !(ref.preis_s[0] == '');
 
-
                     if(ref.labels[0].length == 0) {
-                        ref.labels[0].push({label : {
-                            0: 'empty'
-                        }});
-                    }
-                    if(dataIsValid) {
+                        console.log("No Label provided — adding empty one")
+                        
+                        let emptyLabel = { label : { 0 : 'empty'}}
 
-                        angebote[i] = {
-                            angebot: ref.titel,
-                            beschreibung: ref.beschreibung,
-                            // labels: foodTypeChecker(ref.labels[0].label[0].$.name)
-                            labels: foodTypeChecker( ref.labels[0].label[0].$.name)
+                        ref.labels[0] = emptyLabel;
+                    }
+
+                    console.log("LABELSCHECK", ref.labels[0])
+
+
+                    if(dataIsValid) {
+                        let titel = ref.titel
+                        let beschreibung
+                        let labels
+
+                        if(ref.beschreibung == '.') {
+                            beschreibung = "Angebot nicht mehr verfügbar"
+                        } else {
+                            beschreibung = ref.beschreibung
                         }
 
+                        labels = foodTypeChecker( ref.labels[0].label[0].$?.name)
+                        
+                        if (isEmpty(labels)) {
+                            console.log("Label is not defined")
+                            labels = ['']
+                        }
+
+                        angebote[i] = {
+                            angebot: titel,
+                            beschreibung: beschreibung,
+                            // labels: foodTypeChecker(ref.labels[0].label[0].$.name)
+                            labels: labels
+                        }
                     } else {
                         angebote[i] = { angebot:'', beschreibung:'', labels: ''}
                     }
                 }
 
-                console.log(angebote);
+                console.log("Alle Angebote: ", angebote);
 
                 var parsedResponse = '';
                 for (let i = 0; i < angebote.length; i++){
                     let labelsReference = angebote[i].labels[1];
                     console.log("Usercheck: " , user)
                     if(typeof user === 'undefined') {
-                        console.log("undefined alla");
+                        console.log("User is not defined");
                         user = {
                             preference : "all"
                         }
@@ -257,7 +275,7 @@ function handleUserData(ctx) {
     let userID = ctx.update.callback_query.from.id;
     let user = db.get('user').find({'id': userID}).value();
 
-    console.log(user);
+    console.log("UserData", user);
 
     console.log("Searching for UserID: ", userID);
 
@@ -278,6 +296,11 @@ function commitUserDataToLocalDB (currentDate, usedUsername, usedCommand) {
     db.get('statistics').update('counter', n => n + 1)
       .write();
 }
+
+function isEmpty(obj) {
+    return Object.keys(obj).length === 0;
+}
+
 
 function convertUnixTimestampToDate(unix_timestamp){
     var today = new Date();
