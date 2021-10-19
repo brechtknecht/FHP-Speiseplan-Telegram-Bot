@@ -181,7 +181,13 @@ function handleRequests(ctx) {
                             beschreibung = ref.beschreibung
                         }
 
-                        labels = foodTypeChecker( ref.labels[0].label[0].$?.name)
+                        let labelRef = ref.labels[0].label[0].$
+
+                        if(typeof labelRef === 'undefined') {
+                            labelRef = { name : undefined }
+                        }
+
+                        labels = foodTypeChecker( labelRef.name)
                         
                         if (isEmpty(labels)) {
                             console.log("Label is not defined")
