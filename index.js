@@ -16,6 +16,8 @@ const adapter = new FileSync('db.json')
 const db = low(adapter)
 
 
+
+
 // Sets global regex, so that there will always be the custom keyboard triggered
 // if the user gives any input to the bot
 const everything = new RegExp(/./g)
