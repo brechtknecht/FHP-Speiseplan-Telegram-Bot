@@ -16,7 +16,10 @@ const adapter = new FileSync('db.json')
 const db = low(adapter)
 
 
-
+var http = require("http");
+setInterval(function() {
+    http.get("https://speiseplan-api.herokuapp.com");
+}, 300000); // every 5 minutes (300000)
 
 // Sets global regex, so that there will always be the custom keyboard triggered
 // if the user gives any input to the bot
